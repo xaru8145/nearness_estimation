@@ -97,13 +97,13 @@ include_directories(
 )
 
 # Define class (it is a library not an executable)
-add_library(least_squares src/least_squares.cpp)
-# add_dependencies(least_squares  ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(least_squares ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+add_library(simple_depth src/simple_depth.cpp)
+# add_dependencies(simple_depth  ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(simple_depth ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
 
 # Define executable that calls the class
-add_executable(least_squares_node src/least_squares_node.cpp)
-target_link_libraries(least_squares_node least_squares ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+add_executable(simple_depth_node src/simple_depth_node.cpp)
+target_link_libraries(simple_depth_node simple_depth ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
 
 #############
 ## Install ##

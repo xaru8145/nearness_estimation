@@ -22,9 +22,9 @@ class DepthEstimation{
         void init();
 
         // FUNCTIONS
-        void stateCb(const nav_msgs::OdometryConstPtr &state_msg);
+        void stateCb(const geometry_msgs::TwistStampedConstPtr &state_msg);
         void oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg);
-        void depthCb();
+        //void depthCb();
 
     private:
         ros::NodeHandle nh_;

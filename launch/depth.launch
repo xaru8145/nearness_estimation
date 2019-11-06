@@ -15,6 +15,6 @@
 
 <node pkg="vrpn_velocity" type="vrpn_vel_calc.py" name="vrpn_vel_calc" /> 
 
-<node name="least_squares" pkg="depth_estimation" type="least_squares_node" output="screen" />
+<node name="simple_depth" pkg="depth_estimation" type="simple_depth_node" output="screen" />
 
 </launch>
