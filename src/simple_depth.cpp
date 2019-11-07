@@ -20,7 +20,7 @@ void DepthEstimation::init() {
     pub_depth_ = nh_.advertise<std_msgs::Float32MultiArray>("estimated_depth", 10);
 
     // Import parameters
-    nh_.param("/optic_flow_node/num_ring_points", num_ring_points_, 30);
+    nh_.param("/simple_depth/num_ring_points", num_ring_points_, 80);
 
 } // End of init
 
@@ -51,11 +51,7 @@ void DepthEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_m
   ave_tang_flow_.resize(num_ring_points_);
   for(int i = 0; i < num_ring_points_; i++){
           ave_tang_flow_(i) = oflow_msg->data[i];
- 	  //ROS_INFO_THROTTLE(1,"average oflow %f", ave_tang_flow_(i));
   }
-
-//}
-//void DepthEstimation::depthCb(){
 
   //Calculate gamma vector and depth
   VectorXf V(num_ring_points_), mu_vector(num_ring_points_), Qr(num_ring_points_);
@@ -64,7 +60,9 @@ void DepthEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_m
 
   for(int i = 0; i < num_ring_points_; i++){
         gamma_vector_(i) = ((float(i)/float(num_ring_points_-1))*2*M_PI - M_PI);
-	mu_vector(i) = ( ave_tang_flow_(i) + r_ )/(u_*sin(gamma_vector_(i)) - v_*cos(gamma_vector_(i)));
+	//Ignore lateral velocity for now
+	mu_vector(i) = ( ave_tang_flow_(i) + r_ )/(u_*sin(gamma_vector_(i)));
+	//mu_vector(i) = ( ave_tang_flow_(i) + r_ )/(u_*sin(gamma_vector_(i)) - v_*cos(gamma_vector_(i)));
   	depth_vector_(i) = 1/mu_vector(i);
   }
 
