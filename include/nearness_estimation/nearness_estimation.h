@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>
 #include <iostream>
+#include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <tf/tf.h>
 #include <nav_msgs/Odometry.h>
@@ -22,14 +23,13 @@ class NearnessEstimation{
         void init();
 
         // FUNCTIONS
-        void stateCb(const geometry_msgs::TwistStampedConstPtr &state_msg);
+        void radarCb(const geometry_msgs::TwistWithCovarianceStampedConstPtr &radar_msg);
         void oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg);
 
     private:
         ros::NodeHandle nh_;
         ros::NodeHandle pnh_;
         std::string node_name_{"node_name"};
-
 
         ros::Subscriber sub_state_;
         ros::Subscriber sub_tang_flow_;
@@ -40,10 +40,7 @@ class NearnessEstimation{
         VectorXf mu_vector_;
         VectorXf ave_tang_flow_;
 
-
-        // Mocap state
-        double phi_;
-        double theta_;
+        // Radar velocity
         double psi_;
         float u_;
         float v_;
