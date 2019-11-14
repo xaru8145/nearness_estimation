@@ -1,31 +1,31 @@
-#include <depth_estimation/depth_estimation.h>
+#include <nearness_estimation/nearness_estimation.h>
 
-DepthEstimation::DepthEstimation(const ros::NodeHandle &node_handle,
+NearnessEstimation::NearnessEstimation(const ros::NodeHandle &node_handle,
                                  const ros::NodeHandle &private_node_handle)
         :nh_(node_handle),
         pnh_(private_node_handle) {
         this->init();
   }
 
-void DepthEstimation::init() {
+void NearnessEstimation::init() {
 
     init_ = true;
 
     // Set up subscribers and callbacks
-    sub_state_ = nh_.subscribe("/vrpn_velocity/oflow_xaru8145_frame/filtered", 1, &DepthEstimation::stateCb, this);
-    sub_tang_flow_ = nh_.subscribe("/optic_flow_node/tang_optic_flow", 1, &DepthEstimation::oflowCb, this);
+    sub_state_ = nh_.subscribe("/vrpn_velocity/oflow_xaru8145_frame/filtered", 1, &NearnessEstimation::stateCb, this);
+    sub_tang_flow_ = nh_.subscribe("/optic_flow_node/tang_optic_flow", 1, &NearnessEstimation::oflowCb, this);
     //Define lidar sub
 
     // Set up publishers
-    pub_depth_ = nh_.advertise<std_msgs::Float32MultiArray>("estimated_depth", 10);
+    pub_mu_ = nh_.advertise<std_msgs::Float32MultiArray>("estimated_nearness", 10);
 
     // Import parameters
-    nh_.param("/simple_depth/num_ring_points", num_ring_points_, 80);
+    nh_.param("/simple_nearness/num_ring_points", num_ring_points_, 80);
 
 } // End of init
 
 
-void DepthEstimation::stateCb(const geometry_msgs::TwistStampedConstPtr &state_msg){
+void NearnessEstimation::stateCb(const geometry_msgs::TwistStampedConstPtr &state_msg){
 
 
   // Convert Quaternion to RPY
@@ -46,31 +46,29 @@ void DepthEstimation::stateCb(const geometry_msgs::TwistStampedConstPtr &state_m
   //ROS_INFO_THROTTLE(1,"r  %f", r_);
 }
 
-void DepthEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg){
+void NearnessEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg){
 
   ave_tang_flow_.resize(num_ring_points_);
   for(int i = 0; i < num_ring_points_; i++){
           ave_tang_flow_(i) = oflow_msg->data[i];
   }
 
-  //Calculate gamma vector and depth
-  VectorXf V(num_ring_points_), mu_vector(num_ring_points_), Qr(num_ring_points_);
+  //Calculate gamma vector and nearness
   gamma_vector_.resize(num_ring_points_);
-  depth_vector_.resize(num_ring_points_);
+  mu_vector_.resize(num_ring_points_);
 
+  u_ = 1; //hardcoded velocity to check working depth
   for(int i = 0; i < num_ring_points_; i++){
         gamma_vector_(i) = ((float(i)/float(num_ring_points_-1))*2*M_PI - M_PI);
 	//Ignore lateral velocity for now
-	mu_vector(i) = ( ave_tang_flow_(i) + r_ )/(u_*sin(gamma_vector_(i)));
-	//mu_vector(i) = ( ave_tang_flow_(i) + r_ )/(u_*sin(gamma_vector_(i)) - v_*cos(gamma_vector_(i)));
-  	depth_vector_(i) = 1/mu_vector(i);
+	mu_vector_(i) = ( ave_tang_flow_(i) + r_ )/(u_*sin(gamma_vector_(i)));
   }
 
-  std_msgs::Float32MultiArray depth_msg;
+  std_msgs::Float32MultiArray mu_msg;
   for(int i = 0; i < num_ring_points_; i++){
-          depth_msg.data.push_back( depth_vector_(i) );
+          mu_msg.data.push_back( mu_vector_(i) );
   }
  
-  pub_depth_.publish(depth_msg);
+  pub_mu_.publish(mu_msg);
 
 }

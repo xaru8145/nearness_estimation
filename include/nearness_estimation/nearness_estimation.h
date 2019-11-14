@@ -1,5 +1,5 @@
-#ifndef DEPTH_ESTIMATION_H
-#define DEPTH_ESTIMATION_H
+#ifndef NEARNESS_ESTIMATION_H
+#define NEARNESS_ESTIMATION_H
 
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>
@@ -13,18 +13,17 @@
 using namespace std;
 using namespace Eigen;
 
-class DepthEstimation{
+class NearnessEstimation{
     public:
-        DepthEstimation(const ros::NodeHandle &node_handle,
+        NearnessEstimation(const ros::NodeHandle &node_handle,
                           const ros::NodeHandle &private_node_handle);
-        ~DepthEstimation() = default;
+        ~NearnessEstimation() = default;
 
         void init();
 
         // FUNCTIONS
         void stateCb(const geometry_msgs::TwistStampedConstPtr &state_msg);
         void oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg);
-        //void depthCb();
 
     private:
         ros::NodeHandle nh_;
@@ -34,11 +33,11 @@ class DepthEstimation{
 
         ros::Subscriber sub_state_;
         ros::Subscriber sub_tang_flow_;
-        ros::Publisher pub_depth_;
+        ros::Publisher pub_mu_;
 
         int num_ring_points_;
         VectorXf gamma_vector_;
-        VectorXf depth_vector_;
+        VectorXf mu_vector_;
         VectorXf ave_tang_flow_;
 
 

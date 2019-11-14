@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(depth_estimation)
+project(nearness_estimation)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -79,7 +79,7 @@ find_package(Eigen3 REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES depth_estimation
+  LIBRARIES nearness_estimation
   CATKIN_DEPENDS roscpp rospy sensor_msgs std_msgs
   DEPENDS EIGEN3
 )
@@ -97,13 +97,13 @@ include_directories(
 )
 
 # Define class (it is a library not an executable)
-add_library(simple_depth src/simple_depth.cpp)
-# add_dependencies(simple_depth  ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(simple_depth ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+add_library(simple_nearness src/simple_nearness.cpp)
+# add_dependencies(simple_nearness  ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(simple_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
 
 # Define executable that calls the class
-add_executable(simple_depth_node src/simple_depth_node.cpp)
-target_link_libraries(simple_depth_node simple_depth ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+add_executable(simple_nearness_node src/simple_nearness_node.cpp)
+target_link_libraries(simple_nearness_node simple_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
 
 #############
 ## Install ##

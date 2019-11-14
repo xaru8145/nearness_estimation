@@ -11,12 +11,16 @@
 	<param name="num_rings" value="5"/>
 </node>
 
-<include file="/opt/ros/melodic/share/vrpn_client_ros/launch/optitrack.launch" />
+<!--
+ <include file="/opt/ros/melodic/share/vrpn_client_ros/launch/optitrack.launch" />
 
 <node pkg="vrpn_velocity" type="vrpn_vel_calc.py" name="vrpn_vel_calc" /> 
+-->
 
 <node name="simple_depth" pkg="depth_estimation" type="simple_depth_node" output="screen" >
 	<param name="num_ring_points" value="80"/>
 </node>
+
+<include file="$(find rplidar_ros)/launch/rplidar_a3.launch" />
 
 </launch>

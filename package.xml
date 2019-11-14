@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>depth_estimation</name>
+  <name>nearness_estimation</name>
   <version>0.0.0</version>
-  <description>The depth_estimation package</description>
+  <description>The nearness_estimation package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
