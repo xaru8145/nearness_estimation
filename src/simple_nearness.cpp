@@ -46,7 +46,7 @@ void NearnessEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflo
   mu_vector_.resize(num_ring_points_);
 
   for(int i = 0; i < num_ring_points_; i++){
-        gamma_vector_(i) = ((float(i)/float(num_ring_points_-1))*2*M_PI);
+        gamma_vector_(i) = ((float(i)/float(num_ring_points_-1))*2*M_PI);// - M_PI);
         //cout << gamma_vector_(i);
         //ROS_INFO_THROTTLE("gamma  %f", gamma_vector_(i));
 	      //Ignore lateral velocity for now

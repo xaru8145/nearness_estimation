@@ -3,13 +3,23 @@
 <include file="$(find usb_cam)/launch/usb_cam-test.launch" />
 
 <node name="optic_flow_node" pkg="optic_flow_node" type="wide_field_optic_flow_node" output="screen" >
-	<param name="image_center_x" value="290"/>
+	<!-- EC Corridor params
+        <param name="image_center_x" value="290"/>
 	<param name="image_center_y" value="240"/>
-	<param name="inner_ring_radius" value="155"/>
-	<param name="ring_dr" value="20"/>
+	<param name="inner_ring_radius" value="220"/>
+	<param name="ring_dr" value="10"/>
 	<param name="num_ring_points" value="80"/>
 	<param name="num_rings" value="5"/> 
 	<param name="pixel_scale" value="64"/>
+	-->
+        <param name="image_center_x" value="295"/>
+        <param name="image_center_y" value="240"/>
+        <param name="inner_ring_radius" value="190"/>
+        <param name="ring_dr" value="10"/>
+        <param name="num_ring_points" value="80"/>
+        <param name="num_rings" value="5"/>
+        <param name="pixel_scale" value="64"/>
+
 </node>
 
 <include file="$(find goggles)/launch/goggles.launch" />
@@ -20,7 +30,7 @@
 <node pkg="vrpn_velocity" type="vrpn_vel_calc.py" name="vrpn_vel_calc" /> 
 -->
 
-<node name="simple_nearness" pkg="nearness_estimation" type="nearness_depth_node" output="screen" >
+<node name="simple_nearness" pkg="nearness_estimation" type="simple_nearness_node" output="screen" >
 	<param name="num_ring_points" value="80"/>
 </node>
 
