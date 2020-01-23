@@ -13,6 +13,7 @@ void NearnessEstimation::init() {
 
     // Set up subscribers and callbacks
     sub_state_ = nh_.subscribe("/mmWaveDataHdl/velocity", 1, &NearnessEstimation::radarCb, this);
+    sub_imu_ = nh_.subscribe("/imu/data", 1, &NearnessEstimation::imuCb, this);
     sub_tang_flow_ = nh_.subscribe("/optic_flow_node/tang_optic_flow", 1, &NearnessEstimation::oflowCb, this);
     //Define lidar sub
 
@@ -30,8 +31,14 @@ void NearnessEstimation::radarCb(const geometry_msgs::TwistWithCovarianceStamped
   u_ = radar_msg->twist.twist.linear.x;
   // Set lat velocity to 0 for now
   v_ = 0;
-  r_ = 0;
-  //ROS_INFO_THROTTLE(1,"u  %f", u_);
+
+}
+
+void NearnessEstimation::imuCb(const sensor_msgs::ImuConstPtr &imu_msg){
+
+  // Angular rate of filtered IMU data on z axis
+  r_ = imu_msg->angular_velocity.z;
+
 }
 
 void NearnessEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg){
@@ -40,6 +47,8 @@ void NearnessEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflo
   for(int i = 0; i < num_ring_points_; i++){
           ave_tang_flow_(i) = oflow_msg->data[i];
   }
+
+  //ROS_INFO_THROTTLE(1,"r  %f", r_);
 
   //Calculate gamma vector and nearness
   gamma_vector_.resize(num_ring_points_);

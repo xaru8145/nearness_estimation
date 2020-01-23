@@ -6,6 +6,7 @@
 #include <iostream>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <std_msgs/Float32MultiArray.h>
+#include <sensor_msgs/Imu.h>
 #include <tf/tf.h>
 #include <nav_msgs/Odometry.h>
 #include <Eigen/Dense>
@@ -24,6 +25,7 @@ class NearnessEstimation{
 
         // FUNCTIONS
         void radarCb(const geometry_msgs::TwistWithCovarianceStampedConstPtr &radar_msg);
+        void imuCb(const sensor_msgs::ImuConstPtr &imu_msg);
         void oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg);
 
     private:
@@ -32,6 +34,7 @@ class NearnessEstimation{
         std::string node_name_{"node_name"};
 
         ros::Subscriber sub_state_;
+        ros::Subscriber sub_imu_;
         ros::Subscriber sub_tang_flow_;
         ros::Publisher pub_mu_;
 

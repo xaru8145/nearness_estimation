@@ -12,13 +12,13 @@
 	<param name="num_rings" value="5"/> 
 	<param name="pixel_scale" value="64"/>
 	-->
-        <param name="image_center_x" value="295"/>
+        <param name="image_center_x" value="288"/>
         <param name="image_center_y" value="240"/>
-        <param name="inner_ring_radius" value="190"/>
+        <param name="inner_ring_radius" value="210"/>
         <param name="ring_dr" value="10"/>
         <param name="num_ring_points" value="80"/>
         <param name="num_rings" value="5"/>
-        <param name="pixel_scale" value="64"/>
+        <param name="pixel_scale" value="36"/>
 
 </node>
 
@@ -34,6 +34,6 @@
 	<param name="num_ring_points" value="80"/>
 </node>
 
-<!-- <include file="$(find rplidar_ros)/launch/rplidar_a3.launch" /> -->
+<include file="$(find rplidar_ros)/launch/rplidar_a3.launch" />
 
 </launch>
