@@ -16,7 +16,7 @@
         <param name="image_center_y" value="240"/>
         <param name="inner_ring_radius" value="220"/>
         <param name="ring_dr" value="10"/>
-        <param name="num_ring_points" value="80"/>
+        <param name="num_ring_points" value="161"/>
         <param name="num_rings" value="5"/>
         <param name="pixel_scale" value="215"/>
 
@@ -31,7 +31,7 @@
 -->
 
 <node name="simple_nearness" pkg="nearness_estimation" type="simple_nearness_node" output="screen" >
-	<param name="num_ring_points" value="80"/>
+	<param name="num_ring_points" value="161"/>
 </node>
 
 <include file="$(find rplidar_ros)/launch/rplidar_s1.launch" />
