@@ -13,7 +13,7 @@ void NearnessEstimation::init() {
 
     // Set up subscribers and callbacks
     sub_state_ = nh_.subscribe("/mmWaveDataHdl/velocity", 1, &NearnessEstimation::radarCb, this);
-    sub_imu_ = nh_.subscribe("/imu/data", 1, &NearnessEstimation::imuCb, this);
+    sub_imu_ = nh_.subscribe("/imu/data_added_cov", 1, &NearnessEstimation::imuCb, this);
     sub_tang_flow_ = nh_.subscribe("/optic_flow_node/tang_optic_flow", 1, &NearnessEstimation::oflowCb, this);
     //Define lidar sub
 
