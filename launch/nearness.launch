@@ -18,7 +18,11 @@
       <param name="ring_dr" value="10"/>
       <param name="num_ring_points" value="160"/>
       <param name="num_rings" value="5"/>
+      <param name="pyr_window_size" value="50"/>
       <param name="pixel_scale" value="215"/>
+      <!-- Blur size must be an int odd number -->
+      <param name="if_blur" value="true"/>
+      <param name="blur_size" value="21"/>
   </node>
 
   <include file="$(find goggles)/launch/goggles.launch" />
@@ -41,7 +45,11 @@
       <param name="ring_dr" value="10"/>
       <param name="num_ring_points" value="160"/>
       <param name="num_rings" value="5"/>
+      <param name="pyr_window_size" value="100"/>
       <param name="pixel_scale" value="215"/>
+      <!-- Blur size must be an int odd number -->
+      <param name="if_blur" value="false"/>
+      <param name="blur_size" value="5"/>
   </node>
 
   <node if="$(arg nearness)" name="simple_nearness" pkg="nearness_estimation" type="simple_nearness_node" output="screen" >
