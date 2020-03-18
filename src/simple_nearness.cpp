@@ -19,9 +19,11 @@ void NearnessEstimation::init() {
 
     // Set up publishers
     pub_mu_ = nh_.advertise<std_msgs::Float32MultiArray>("estimated_nearness", 10);
+    pub_laser_ = nh_.advertise<sensor_msgs::LaserScan>("depth/laserscan", 10);
 
     // Import parameters
     nh_.param("/simple_nearness/num_ring_points", num_ring_points_, 80);
+    nh_.param("/simple_nearness/publish_laser", publish_laser_, false);
 
 } // End of init
 
@@ -38,10 +40,13 @@ void NearnessEstimation::imuCb(const sensor_msgs::ImuConstPtr &imu_msg){
 
   // Angular rate of filtered IMU data on z axis
   r_ = imu_msg->angular_velocity.z;
+  imu_time_ = imu_msg-> header.stamp;
 
 }
 
 void NearnessEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg){
+  // Time stamp for laser msg
+  ros::Time scan_time = ros::Time::now();
 
   ave_tang_flow_.resize(num_ring_points_);
   for(int i = 0; i < num_ring_points_; i++){
@@ -70,5 +75,24 @@ void NearnessEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflo
   }
 
   pub_mu_.publish(mu_msg);
+
+  if(publish_laser_){
+        sensor_msgs::LaserScan laser_msg;
+        laser_msg.header.stamp = imu_time_;//scan_time;
+        laser_msg.header.frame_id = "oflow_laser_frame";
+        laser_msg.angle_min = -M_PI;
+        laser_msg.angle_max = M_PI;
+        laser_msg.angle_increment = 2*M_PI / num_ring_points_;
+        laser_msg.time_increment = (1 / 25) / (num_ring_points_);
+        laser_msg.range_min = 0.2;
+        laser_msg.range_max = 10.0;
+        laser_msg.ranges.resize(num_ring_points_);
+        laser_msg.intensities.resize(num_ring_points_);
+        for(unsigned int i = 0; i < num_ring_points_; ++i){
+           laser_msg.ranges[i] = 1/mu_vector_(i);
+           laser_msg.intensities[i] = 47.0;
+         }
+        pub_laser_.publish(laser_msg);
+  }
 
 }

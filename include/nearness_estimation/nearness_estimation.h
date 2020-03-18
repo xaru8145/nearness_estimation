@@ -6,7 +6,9 @@
 #include <iostream>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Time.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/LaserScan.h>
 #include <tf/tf.h>
 #include <nav_msgs/Odometry.h>
 #include <Eigen/Dense>
@@ -37,6 +39,8 @@ class NearnessEstimation{
         ros::Subscriber sub_imu_;
         ros::Subscriber sub_tang_flow_;
         ros::Publisher pub_mu_;
+        ros::Publisher pub_laser_;
+        ros::Time imu_time_;
 
         int num_ring_points_;
         VectorXf gamma_vector_;
@@ -49,9 +53,7 @@ class NearnessEstimation{
         float v_;
         float r_;
         bool init_;
-
-        ros::Time image_timestamp_;
-        ros::Time last_image_timestamp_;
+        bool publish_laser_;
 
 };
 
