@@ -1,10 +1,14 @@
-#ifndef DEPTH_ESTIMATION_H
-#define DEPTH_ESTIMATION_H
+#ifndef NEARNESS_ESTIMATION_H
+#define NEARNESS_ESTIMATION_H
 
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>
 #include <iostream>
+#include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Time.h>
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/LaserScan.h>
 #include <tf/tf.h>
 #include <nav_msgs/Odometry.h>
 #include <Eigen/Dense>
@@ -13,46 +17,43 @@
 using namespace std;
 using namespace Eigen;
 
-class DepthEstimation{
+class NearnessEstimation{
     public:
-        DepthEstimation(const ros::NodeHandle &node_handle,
+        NearnessEstimation(const ros::NodeHandle &node_handle,
                           const ros::NodeHandle &private_node_handle);
-        ~DepthEstimation() = default;
+        ~NearnessEstimation() = default;
 
         void init();
 
         // FUNCTIONS
-        void stateCb(const nav_msgs::OdometryConstPtr &state_msg);
+        void radarCb(const geometry_msgs::TwistWithCovarianceStampedConstPtr &radar_msg);
+        void imuCb(const sensor_msgs::ImuConstPtr &imu_msg);
         void oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg);
-        void depthCb();
 
     private:
         ros::NodeHandle nh_;
         ros::NodeHandle pnh_;
         std::string node_name_{"node_name"};
 
-
         ros::Subscriber sub_state_;
+        ros::Subscriber sub_imu_;
         ros::Subscriber sub_tang_flow_;
-        ros::Publisher pub_depth_;
+        ros::Publisher pub_mu_;
+        ros::Publisher pub_laser_;
+        ros::Time imu_time_;
 
         int num_ring_points_;
         VectorXf gamma_vector_;
-        VectorXf depth_vector_;
+        VectorXf mu_vector_;
         VectorXf ave_tang_flow_;
 
-
-        // Mocap state
-        double phi_;
-        double theta_;
+        // Radar velocity
         double psi_;
         float u_;
         float v_;
         float r_;
         bool init_;
-
-        ros::Time image_timestamp_;
-        ros::Time last_image_timestamp_;
+        bool publish_laser_;
 
 };
 
