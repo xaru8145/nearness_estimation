@@ -11,7 +11,7 @@
 
   <!-- Offline params -->
   <arg name="oflow_plot" default="false" doc="plot oflow vs gamma data along time"/>
-  <arg name="nearness" default="true" doc="compute nearness offline"/>
+  <arg name="nearness" default="false" doc="compute nearness offline"/>
     <arg name="oflow_laser" default="true" doc="pub laserscan from oflow depth"/>
 
   <arg name="rviz" default="true" doc="visualize laserscan in rviz"/>
@@ -32,6 +32,7 @@
       <!-- Blur size must be an int odd number -->
       <param name="if_blur" value="true"/>
       <param name="blur_size" value="5"/>
+      <param name="alpha" value="0.7"/>
   </node>
 
   <include file="$(find goggles)/launch/goggles.launch" />
@@ -71,6 +72,8 @@
       <!-- Blur size must be an int odd number -->
       <param name="if_blur" value="true"/>
       <param name="blur_size" value="5"/>
+      <param name="alpha" value="0.7"/>
+
   </node>
 
   <node if="$(arg nearness)" name="simple_nearness" pkg="nearness_estimation" type="simple_nearness_node" output="screen" >
