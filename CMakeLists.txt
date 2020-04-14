@@ -98,12 +98,17 @@ include_directories(
 
 # Define class (it is a library not an executable)
 add_library(simple_nearness src/simple_nearness.cpp)
-# add_dependencies(simple_nearness  ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(simple_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
 
 # Define executable that calls the class
 add_executable(simple_nearness_node src/simple_nearness_node.cpp)
 target_link_libraries(simple_nearness_node simple_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+
+add_library(kf_nearness src/kf_nearness.cpp)
+target_link_libraries(kf_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+add_executable(kf_nearness_node src/kf_nearness_node.cpp)
+target_link_libraries(kf_nearness_node kf_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+
 
 #############
 ## Install ##
