@@ -42,17 +42,21 @@ class KalmanFilter{
         ros::Subscriber sub_tang_flow_;
 
         ros::Publisher pub_mu_;
-        ros::Publisher pub_laser_;
-        ros::Time imu_time_;
+        //ros::Publisher pub_laser_;
+        ros::Time last_timestamp_;
 
         int N_;
         int Nrad_;
         float u_;
         float v_;
         float r_;
+        float last_r_;
+        float last_u_;
+        float last_v_;
         double q_;
         double r_oflow_;
         double r_rad_;
+        double dt_;
         bool init_;
         bool flag_imu_;
         bool flag_oflow_;
@@ -60,12 +64,22 @@ class KalmanFilter{
         bool flag_vel_;
       //  bool publish_laser_;
 
-        MatrixXf Q_;
-        MatrixXf R_oflow_;
-        MatrixXf R_rad_;
-        //VectorXf gamma_vector_;
+        MatrixXd Q_;
+        MatrixXd R_oflow_;
+        MatrixXd R_rad_;
+        MatrixXd R_;
+        MatrixXd P0_;
+        MatrixXd P_update_;
+        MatrixXd last_P_;
+        VectorXd state0_;
+        VectorXd y_rad_;
+        VectorXd y_;
+        VectorXd oflow_;
+        VectorXd last_oflow_;
+        VectorXf gamma_vector_;
+        VectorXd state_update_;
+        VectorXd last_state_;
         //VectorXf mu_vector_;
-        VectorXf ave_tang_flow_;
 
 };
 
