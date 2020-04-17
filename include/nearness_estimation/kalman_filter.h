@@ -30,6 +30,8 @@ class KalmanFilter{
         void radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_msg);
         void imuCb(const sensor_msgs::ImuConstPtr &imu_msg);
         void oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg);
+        void predict();
+        void update();
 
     private:
         ros::NodeHandle nh_;
@@ -64,6 +66,8 @@ class KalmanFilter{
         bool flag_vel_;
       //  bool publish_laser_;
 
+        MatrixXd identity_;
+        MatrixXd F_;
         MatrixXd Q_;
         MatrixXd R_oflow_;
         MatrixXd R_rad_;
@@ -71,14 +75,17 @@ class KalmanFilter{
         MatrixXd P0_;
         MatrixXd P_update_;
         MatrixXd last_P_;
+        MatrixXd P_pred_;
+        MatrixXd H_;
+        MatrixXd K_;
+        MatrixXd KH_;
         VectorXd state0_;
         VectorXd y_rad_;
         VectorXd y_;
         VectorXd oflow_;
         VectorXd last_oflow_;
         VectorXf gamma_vector_;
-        VectorXd state_update_;
-        VectorXd last_state_;
+        VectorXd state_;
         //VectorXf mu_vector_;
 
 };
