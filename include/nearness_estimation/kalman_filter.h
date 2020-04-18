@@ -31,6 +31,7 @@ class KalmanFilter{
         void imuCb(const sensor_msgs::ImuConstPtr &imu_msg);
         void oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg);
         void predict();
+        void kalmanGain();
         void update();
 
     private:
@@ -49,6 +50,7 @@ class KalmanFilter{
 
         int N_;
         int Nrad_;
+        int Ndy_;
         float u_;
         float v_;
         float r_;

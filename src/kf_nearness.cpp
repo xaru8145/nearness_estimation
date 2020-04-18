@@ -29,7 +29,7 @@ void KalmanFilter::init() {
     //pub_laser_ = nh_.advertise<sensor_msgs::LaserScan>("depth/laserscan", 10);
 
     // Import parameters
-    nh_.param("/kf_nearness/num_ring_points", N_, 120);
+    nh_.param("/kf_nearness/num_ring_points", N_, 160);
     nh_.param("/kf_nearness/covariance_process", q_, 100.0);
     nh_.param("/kf_nearness/covariance_optic_flow", r_oflow_, 5.0);
     nh_.param("/kf_nearness/covariance_radar", r_rad_, 0.001);
@@ -37,6 +37,7 @@ void KalmanFilter::init() {
     nh_.param("/pointcloud_to_laserscan/angle_min", a_min, -0.78);
     nh_.param("/pointcloud_to_laserscan/angle_increment", da, 0.03);
     Nrad_ = 40; //for comfort before finishing the code(a_max - a_min)/da;
+    Ndy_ = (N_+Nrad_)/2;
 
     // Process noise covariance
     Q_.setIdentity(N_,N_);
@@ -156,42 +157,9 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
 
         ros::Time time3 = ros::Time::now();
 
-        // Calculate Kalman gain
-        MatrixXd pht;
-        MatrixXd hphtR;
-        pht.setZero(N_,N_+Nrad_);
-        hphtR.setZero(N_+Nrad_,N_+Nrad_);
-        for (int i = 0; i < N_+Nrad_; i++){
-          if (i<N_){
-            pht(i,i) = P_pred_(i,i)*H_(i,i);
-            hphtR(i,i) = H_(i,i)*pht(i,i) + R_(i,i);
-          }
-          else{
-            pht(i-(N_+Nrad_)/2,i) = P_pred_(i-(N_+Nrad_)/2,i-(N_+Nrad_)/2);
-            hphtR(i,i) = pht(i-(N_+Nrad_)/2,i) + R_(i,i);
-            hphtR(i-(N_+Nrad_)/2,i) = pht(i-(N_+Nrad_)/2,i)*H_(i-(N_+Nrad_)/2,i-(N_+Nrad_)/2);
-            hphtR(i,i-(N_+Nrad_)/2) = pht(i-(N_+Nrad_)/2,i-(N_+Nrad_)/2);
-          }
-        }
-
-        K_.resize(N_,N_+Nrad_);
-        K_.noalias() =  pht*hphtR.inverse();
-        // Void columns of K with non-valid radar measurements (=inf)
-        for (int i = 0; i < Nrad_; i++){
-          if(isinf(y_(N_+i))){
-            K_.col(N_+i).setZero();
-          }
-        }
+        kalmanGain();
 
         ros::Time time4 = ros::Time::now();
-
-        KH_.setZero(N_,N_);
-        for (int i = 0; i < N_; i++){
-            KH_(i,i) = H_(i,i)*K_(i,i);
-            if (i>=(N_-Nrad_)/2 && i<(N_-Nrad_)/2+Nrad_){
-              KH_(i,i) = KH_(i,i) + K_(i,i+(N_+Nrad_)/2)*H_(i+(N_+Nrad_)/2,i);
-            }
-        }
 
         update();
 
@@ -250,9 +218,78 @@ void KalmanFilter::predict(){
     }
 }
 
+void KalmanFilter::kalmanGain(){
+    // Calculate H*P*H'+R and P*H'
+    MatrixXd pht;
+    MatrixXd hphtR;
+    pht.setZero(N_,N_+Nrad_);
+    hphtR.setZero(N_+Nrad_,N_+Nrad_);
+    for (int i = 0; i < N_+Nrad_; i++){
+      if (i<N_){
+        pht(i,i) = P_pred_(i,i)*H_(i,i);
+        hphtR(i,i) = H_(i,i)*pht(i,i) + R_(i,i);
+      }
+      else{
+        pht(i-Ndy_,i) = P_pred_(i-Ndy_,i-Ndy_);
+        hphtR(i,i) = pht(i-Ndy_,i) + R_(i,i);
+        hphtR(i-Ndy_,i) = pht(i-Ndy_,i)*H_(i-Ndy_,i-Ndy_);
+        hphtR(i,i-Ndy_) = pht(i-Ndy_,i-Ndy_);
+      }
+    }
+
+    // Calculate inverse(hphtR)
+    double det;
+    MatrixXd invhphtR;
+    invhphtR.setZero(N_+Nrad_,N_+Nrad_);
+    for (int i = 0; i < Ndy_; i++){
+        if(i<(N_-Nrad_)/2){
+          invhphtR(i,i) = 1/hphtR(i,i);
+          invhphtR(i+Ndy_,i+Ndy_) = 1/hphtR(i+Ndy_,i+Ndy_);
+        }
+        else{
+          det = 1/(hphtR(i,i)*hphtR(i+Ndy_,i+Ndy_) - hphtR(i+Ndy_,i)*hphtR(i,i+Ndy_));
+          invhphtR(i,i) = det*hphtR(i+Ndy_,i+Ndy_);
+          invhphtR(i+Ndy_,i) = -det*hphtR(i+Ndy_,i);
+          invhphtR(i,i+Ndy_) =  invhphtR(i+Ndy_,i);
+          invhphtR(i+Ndy_,i+Ndy_) = det*hphtR(i,i);
+        }
+    }
+
+    // K = P*H'*inverse(H*P*H'+R)
+    K_.resize(N_,N_+Nrad_);
+    for (int i = 0; i <N_+Nrad_; i++){
+        if(i<(N_-Nrad_)/2){
+          K_(i,i) = pht(i,i)*invhphtR(i,i);
+        }
+        else if(i>=(N_-Nrad_)/2 && i<(N_-Nrad_)/2+Nrad_){
+          K_(i,i) = pht(i,i)*invhphtR(i,i) + pht(i,i+Ndy_)*invhphtR(i+Ndy_,i);
+        }
+        else if(i>=(N_-Nrad_)/2+Nrad_ && i<N_){
+          K_(i,i) = pht(i,i)*invhphtR(i,i);
+        }
+        else {
+          K_(i-Ndy_,i) = pht(i-Ndy_,i-Ndy_)*invhphtR(i-Ndy_,i) + pht(i-Ndy_,i)*invhphtR(i,i);
+        }
+    }
+
+    // Void columns of K with non-valid radar measurements (=inf)
+    for (int i = 0; i < Nrad_; i++){
+      if(isinf(y_(N_+i))){
+        K_.col(N_+i).setZero();
+      }
+    }
+}
 
 void KalmanFilter::update()
 {
+    // Calculate K*H
+    KH_.setZero(N_,N_);
+    for (int i = 0; i < N_; i++){
+        KH_(i,i) = H_(i,i)*K_(i,i);
+        if (i>=(N_-Nrad_)/2 && i<(N_-Nrad_)/2+Nrad_){
+          KH_(i,i) = KH_(i,i) + K_(i,i+Ndy_)*H_(i+Ndy_,i);
+        }
+    }
     VectorXd KHx;
     KHx.noalias() = KH_*state_;
     state_.noalias() += K_*y_-KHx;
