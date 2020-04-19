@@ -6,6 +6,7 @@
 #include <iostream>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Float32.h>
 #include <std_msgs/Time.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
@@ -45,12 +46,17 @@ class KalmanFilter{
         ros::Subscriber sub_tang_flow_;
 
         ros::Publisher pub_mu_;
+        ros::Publisher pub_oflow_;
+        ros::Publisher pub_radscan_;
+        ros::Publisher pub_vel_;
+        ros::Publisher pub_r_;
         //ros::Publisher pub_laser_;
         ros::Time last_timestamp_;
 
         int N_;
         int Nrad_;
         int Ndy_;
+        int k_;
         float u_;
         float v_;
         float r_;
@@ -82,12 +88,14 @@ class KalmanFilter{
         MatrixXd K_;
         MatrixXd KH_;
         VectorXd state0_;
+        VectorXd state_pred_;
+        VectorXd last_state_;
+        VectorXd state_;
         VectorXd y_rad_;
         VectorXd y_;
         VectorXd oflow_;
         VectorXd last_oflow_;
         VectorXf gamma_vector_;
-        VectorXd state_;
         //VectorXf mu_vector_;
 
 };
