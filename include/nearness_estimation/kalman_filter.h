@@ -31,7 +31,9 @@ class KalmanFilter{
         void radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_msg);
         void imuCb(const sensor_msgs::ImuConstPtr &imu_msg);
         void oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg);
+        void odomCb(const nav_msgs::OdometryConstPtr &odom_msg);
         void predict();
+        void removeOutliers();
         void kalmanGain();
         void update();
 
@@ -44,13 +46,19 @@ class KalmanFilter{
         ros::Subscriber sub_radar_scan_;
         ros::Subscriber sub_imu_;
         ros::Subscriber sub_tang_flow_;
+        ros::Subscriber sub_odom_;
 
         ros::Publisher pub_mu_;
         ros::Publisher pub_oflow_;
+        ros::Publisher pub_oflow2mu_;
+        ros::Publisher pub_doflow_;
+        ros::Publisher pub_a_;
         ros::Publisher pub_radscan_;
         ros::Publisher pub_vel_;
         ros::Publisher pub_r_;
-        //ros::Publisher pub_laser_;
+        ros::Publisher pub_posx_;
+        ros::Publisher pub_posy_;
+        ros::Publisher pub_dt_;
         ros::Time last_timestamp_;
 
         int N_;
@@ -63,19 +71,32 @@ class KalmanFilter{
         float last_r_;
         float last_u_;
         float last_v_;
+        float pos_x_;
+        float pos_y_;
+        float last_pos_x_;
+        float last_pos_y_;
         double q_;
         double r_oflow_;
         double r_rad_;
         double dt_;
+        double thresh_;
         bool init_;
         bool flag_imu_;
         bool flag_oflow_;
         bool flag_radar_;
         bool flag_vel_;
-      //  bool publish_laser_;
 
-        MatrixXd identity_;
-        MatrixXd F_;
+        VectorXd state0_;
+        VectorXd state_pred_;
+        VectorXd state_future_;
+        VectorXd last_state_;
+        VectorXd f_;
+        VectorXd state_;
+        VectorXd y_rad_;
+        VectorXd y_;
+        VectorXd oflow_;
+        VectorXd last_oflow_;
+        VectorXf gamma_vector_;
         MatrixXd Q_;
         MatrixXd R_oflow_;
         MatrixXd R_rad_;
@@ -87,16 +108,6 @@ class KalmanFilter{
         MatrixXd H_;
         MatrixXd K_;
         MatrixXd KH_;
-        VectorXd state0_;
-        VectorXd state_pred_;
-        VectorXd last_state_;
-        VectorXd state_;
-        VectorXd y_rad_;
-        VectorXd y_;
-        VectorXd oflow_;
-        VectorXd last_oflow_;
-        VectorXf gamma_vector_;
-        //VectorXf mu_vector_;
 
 };
 
