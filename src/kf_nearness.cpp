@@ -31,12 +31,14 @@ void KalmanFilter::init() {
     pub_oflow2mu_= nh_.advertise<std_msgs::Float32MultiArray>("oflow2mu", 10);
     pub_doflow_= nh_.advertise<std_msgs::Float32MultiArray>("doflow", 10);
     pub_a_= nh_.advertise<std_msgs::Float32MultiArray>("a", 10);
+    pub_kgain_ = nh_.advertise<std_msgs::Float32MultiArray>("kalman_gain", 10);
     pub_radscan_ = nh_.advertise<std_msgs::Float32MultiArray>("radscan", 10);
     pub_vel_ = nh_.advertise<std_msgs::Float32>("velocity", 10);
     pub_r_ = nh_.advertise<std_msgs::Float32>("angular_velocity", 10);
     pub_posx_ = nh_.advertise<std_msgs::Float32>("pos_x", 10);
     pub_posy_ = nh_.advertise<std_msgs::Float32>("pos_y", 10);
     pub_dt_ = nh_.advertise<std_msgs::Float32>("dt", 10);
+    pub_laser_ = nh_.advertise<sensor_msgs::LaserScan>("laserscan", 10);
     //pub_laser_ = nh_.advertise<sensor_msgs::LaserScan>("depth/laserscan", 10);
 
     // Import parameters
@@ -226,7 +228,7 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
         ros::Time time2 = ros::Time::now();
 
         if (k_>1){
-          removeOutliers();
+          //removeOutliers();
         }
 
         predict();
@@ -240,6 +242,8 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
         update();
 
         ros::Time time5 = ros::Time::now();
+
+        publishLaser();
 
         // Reset flags
         flag_radar_ = false;
@@ -264,6 +268,13 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
         pub_oflow2mu_.publish(oflow2mu_msg);
         pub_doflow_.publish(doflow_msg);
         pub_a_.publish(a_msg);
+
+        // Publish Kalman kalman_gain
+        std_msgs::Float32MultiArray kgain_msg;
+        for(int i = 0; i <N_+Nrad_; i++){
+            kgain_msg.data.push_back( K_vector_(i) );
+        }
+        pub_kgain_.publish(kgain_msg);
 
         // Publish data sensors 4 debug
         std_msgs::Float32 vel_msg, r_msg, posx_msg, posy_msg, dt_msg;
@@ -399,25 +410,31 @@ void KalmanFilter::kalmanGain(){
 
     // K = P*H'*inverse(H*P*H'+R)
     K_.resize(N_,N_+Nrad_);
+    K_vector_.resize(N_+Nrad_);
+    K_vector_.setZero();
     K_.setZero();
     for (int i = 0; i <N_+Nrad_; i++){
         if(i<(N_-Nrad_)/2){
           K_(i,i) = pht(i,i)*invhphtR(i,i);
+          K_vector_(i) =   K_(i,i);
           //cout << K_(i,i);
           //cout << ", ";
         }
         else if(i>=(N_-Nrad_)/2 && i<(N_-Nrad_)/2+Nrad_){
           K_(i,i) = pht(i,i)*invhphtR(i,i) + pht(i,i+Ndy_)*invhphtR(i+Ndy_,i);
+          K_vector_(i) =   K_(i,i);
           //cout << K_(i,i);
           //cout << ", ";
         }
         else if(i>=(N_-Nrad_)/2+Nrad_ && i<N_){
           K_(i,i) = pht(i,i)*invhphtR(i,i);
+          K_vector_(i) =   K_(i,i);
           //cout << K_(i,i);
           //cout << ", ";
         }
         else {
           K_(i-Ndy_,i) = pht(i-Ndy_,i-Ndy_)*invhphtR(i-Ndy_,i) + pht(i-Ndy_,i)*invhphtR(i,i);
+          K_vector_(i) = K_(i-Ndy_,i);
           //cout << K_(i-Ndy_,i);
           //cout << ", ";
         }
@@ -455,4 +472,32 @@ void KalmanFilter::update()
     // No readable nearness by definition @ center points
     state_(0) = 0;
     state_(N_/2) = 0;
+}
+
+void KalmanFilter::publishLaser(){
+  // Publish estimated nearness into laser scan
+  ros::Time scan_time = ros::Time::now();
+
+  sensor_msgs::LaserScan laser_msg;
+  laser_msg.header.stamp = scan_time;
+  laser_msg.header.frame_id = "oflow_laser_frame";
+  laser_msg.angle_min = -M_PI;
+  laser_msg.angle_max = M_PI;
+  laser_msg.angle_increment = 2*M_PI / N_;
+  laser_msg.time_increment =  0.04 / N_;
+  laser_msg.range_min = 0.2;
+  laser_msg.range_max = 10.0;
+  laser_msg.ranges.resize(N_);
+  laser_msg.intensities.resize(N_);
+  for(unsigned int i = 0; i < N_; ++i){
+     laser_msg.ranges[i] = 1/state_(i);
+     if (state_(i)==0){
+       laser_msg.ranges[i] = 10;
+     }
+     if (state_(i)<0){
+       laser_msg.ranges[i] = 10;
+     }
+     laser_msg.intensities[i] = 47.0;
+   }
+  pub_laser_.publish(laser_msg);
 }

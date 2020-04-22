@@ -36,6 +36,7 @@ class KalmanFilter{
         void removeOutliers();
         void kalmanGain();
         void update();
+        void publishLaser();
 
     private:
         ros::NodeHandle nh_;
@@ -53,12 +54,14 @@ class KalmanFilter{
         ros::Publisher pub_oflow2mu_;
         ros::Publisher pub_doflow_;
         ros::Publisher pub_a_;
+        ros::Publisher pub_kgain_;
         ros::Publisher pub_radscan_;
         ros::Publisher pub_vel_;
         ros::Publisher pub_r_;
         ros::Publisher pub_posx_;
         ros::Publisher pub_posy_;
         ros::Publisher pub_dt_;
+        ros::Publisher pub_laser_;
         ros::Time last_timestamp_;
 
         int N_;
@@ -96,6 +99,7 @@ class KalmanFilter{
         VectorXd y_;
         VectorXd oflow_;
         VectorXd last_oflow_;
+        VectorXd K_vector_;
         VectorXf gamma_vector_;
         MatrixXd Q_;
         MatrixXd R_oflow_;
