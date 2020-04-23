@@ -26,27 +26,26 @@ void KalmanFilter::init() {
     //Define lidar sub
 
     // Set up publishers
-    pub_mu_ = nh_.advertise<std_msgs::Float32MultiArray>("nearness", 10);
-    pub_oflow_ = nh_.advertise<std_msgs::Float32MultiArray>("oflow", 10);
-    pub_oflow2mu_= nh_.advertise<std_msgs::Float32MultiArray>("oflow2mu", 10);
-    pub_doflow_= nh_.advertise<std_msgs::Float32MultiArray>("doflow", 10);
-    pub_a_= nh_.advertise<std_msgs::Float32MultiArray>("a", 10);
-    pub_kgain_ = nh_.advertise<std_msgs::Float32MultiArray>("kalman_gain", 10);
-    pub_radscan_ = nh_.advertise<std_msgs::Float32MultiArray>("radscan", 10);
-    pub_vel_ = nh_.advertise<std_msgs::Float32>("velocity", 10);
-    pub_r_ = nh_.advertise<std_msgs::Float32>("angular_velocity", 10);
-    pub_posx_ = nh_.advertise<std_msgs::Float32>("pos_x", 10);
-    pub_posy_ = nh_.advertise<std_msgs::Float32>("pos_y", 10);
-    pub_dt_ = nh_.advertise<std_msgs::Float32>("dt", 10);
+    pub_mu_ = nh_.advertise<std_msgs::Float64MultiArray>("nearness", 10);
+    pub_oflow_ = nh_.advertise<std_msgs::Float64MultiArray>("oflow", 10);
+    pub_oflow2mu_= nh_.advertise<std_msgs::Float64MultiArray>("oflow2mu", 10);
+    pub_doflow_= nh_.advertise<std_msgs::Float64MultiArray>("doflow", 10);
+    pub_a_= nh_.advertise<std_msgs::Float64MultiArray>("a", 10);
+    pub_kgain_ = nh_.advertise<std_msgs::Float64MultiArray>("kalman_gain", 10);
+    pub_radscan_ = nh_.advertise<std_msgs::Float64MultiArray>("radscan", 10);
+    pub_vel_ = nh_.advertise<std_msgs::Float64>("velocity", 10);
+    pub_r_ = nh_.advertise<std_msgs::Float64>("angular_velocity", 10);
+    pub_posx_ = nh_.advertise<std_msgs::Float64>("pos_x", 10);
+    pub_posy_ = nh_.advertise<std_msgs::Float64>("pos_y", 10);
+    pub_dt_ = nh_.advertise<std_msgs::Float64>("dt", 10);
     pub_laser_ = nh_.advertise<sensor_msgs::LaserScan>("laserscan", 10);
-    //pub_laser_ = nh_.advertise<sensor_msgs::LaserScan>("depth/laserscan", 10);
 
     // Import parameters
-    nh_.param("/kf_nearness/num_ring_points", N_,160);
-    nh_.param("/kf_nearness/covariance_process", q_, 100.0);
-    nh_.param("/kf_nearness/covariance_optic_flow", r_oflow_, 5.0);
-    nh_.param("/kf_nearness/covariance_radar", r_rad_, 0.001);
-    nh_.param("/kf_nearness/threshold", thresh_, 0.3);
+    nh_.param("/kf_nearness_node/num_ring_points", N_,160);
+    nh_.param("/kf_nearness_node/covariance_process", q_, 100.0);
+    nh_.param("/kf_nearness_node/covariance_optic_flow", r_oflow_, 5.0);
+    nh_.param("/kf_nearness_node/covariance_radar", r_rad_, 0.001);
+    nh_.param("/kf_nearness_node/threshold", thresh_, 0.3);
     nh_.param("/pointcloud_to_laserscan/angle_max", a_max, 0.78);
     nh_.param("/pointcloud_to_laserscan/angle_min", a_min, -0.78);
     nh_.param("/pointcloud_to_laserscan/angle_increment", da, 0.03);
@@ -56,6 +55,10 @@ void KalmanFilter::init() {
     // Process noise covariance
     Q_.setIdentity(N_,N_);
     Q_ = Q_*q_;
+    // Higher covariance @ front of the vehicle
+    for (int i = N_/2-10; i < N_/2+10; i++){
+      Q_(i,i) = Q_(i,i)*1000; // Test x5 and x10 of that
+    }
 
     // Measurement noise covariance
     R_oflow_.setIdentity(N_,N_);
@@ -86,8 +89,7 @@ void KalmanFilter::init() {
 void KalmanFilter::radarvelCb(const geometry_msgs::TwistWithCovarianceStampedConstPtr &radar_vel_msg){
 
   u_ = radar_vel_msg->twist.twist.linear.x;
-  // Set lat velocity to 0 for now
-  v_ = 0;
+  v_ = 0; // Non-holonomic constraints
   if (u_>0.4){
     flag_vel_ = true; //robot is moving
   }
@@ -116,7 +118,7 @@ void KalmanFilter::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg)
 
 void KalmanFilter::odomCb(const nav_msgs::OdometryConstPtr &odom_msg){
 
-  //flag_imu_ = true;
+  flag_odom_ = true;
   pos_x_ = odom_msg->pose.pose.position.x;
   pos_y_ = odom_msg->pose.pose.position.y;
 
@@ -140,22 +142,22 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
     init_ = false;
   }
   else {
-  // Run filter when robot is moving and we receive all meas
-      if (flag_radar_ && flag_oflow_ && flag_imu_ && flag_vel_){
-        std_msgs::Float32MultiArray radscan_msg;
+  // Run filter when robot is moving and all measureents are received
+      if (flag_radar_ && flag_oflow_ && flag_imu_ && flag_vel_ && flag_odom_){
+        std_msgs::Float64MultiArray radscan_msg;
         for(int i = 0; i <Nrad_; i++){
             radscan_msg.data.push_back( y_rad_(i) );
         }
         pub_radscan_.publish(radscan_msg);
         // Publish last states for just the initialization
         if (k_==1){
-          std_msgs::Float32MultiArray oflow_msg;
+          std_msgs::Float64MultiArray oflow_msg;
           for(int i = 0; i <N_; i++){
               oflow_msg.data.push_back( last_oflow_(i) );
           }
           pub_oflow_.publish(oflow_msg);
           // Publish data sensors 4 debug
-          std_msgs::Float32 vel_msg, r_msg, posx_msg, posy_msg;
+          std_msgs::Float64 vel_msg, r_msg, posx_msg, posy_msg;
           vel_msg.data = last_u_;
           r_msg.data = last_r_;
           posx_msg.data = last_pos_x_;
@@ -168,7 +170,6 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
         // Measurement vector
         VectorXd y_oflow(N_);
         VectorXd oflow2mu(N_);
-        // Enforce positive mu associated to the optic flow measurement
         // Around 180deg, meas are not evry reliable.
         for(int i = 0; i <N_; i++){
           //cout << last_P_(i,i);
@@ -228,7 +229,7 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
         ros::Time time2 = ros::Time::now();
 
         if (k_>1){
-          //removeOutliers();
+          removeOutliers();
         }
 
         predict();
@@ -250,18 +251,19 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
         flag_oflow_ = false;
         flag_imu_ = false;
         flag_vel_ = false;
+        flag_odom_ = false;
         double dt1 = (time2-time1).toSec();
         double dt2 = (time3-time2).toSec();
         double dt3 = (time4-time3).toSec();
         double dt4 = (time5-time4).toSec();
 
-        std_msgs::Float32MultiArray mu_msg, oflow_msg, oflow2mu_msg, doflow_msg, a_msg;
+        std_msgs::Float64MultiArray mu_msg, oflow_msg, oflow2mu_msg, doflow_msg, a_msg;
         for(int i = 0; i <N_; i++){
             mu_msg.data.push_back( state_(i) );
             oflow_msg.data.push_back( oflow_(i) );//oflow_msg.data.push_back( oflow_(i) );
             oflow2mu_msg.data.push_back( f_(i) ); //oflow2mu_msg.data.push_back( oflow2mu(i) );
             doflow_msg.data.push_back( P_pred_(i,i) ); //doflow_msg.data.push_back( doflow(i) );
-            a_msg.data.push_back( P_update_(i,i) ); //a_msg.data.push_back( a(i) );
+            a_msg.data.push_back( a(i) ); //a_msg.data.push_back( P_update_(i,i) a(i) );
         }
         pub_mu_.publish(mu_msg);
         pub_oflow_.publish(oflow_msg);
@@ -270,14 +272,14 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
         pub_a_.publish(a_msg);
 
         // Publish Kalman kalman_gain
-        std_msgs::Float32MultiArray kgain_msg;
+        std_msgs::Float64MultiArray kgain_msg;
         for(int i = 0; i <N_+Nrad_; i++){
             kgain_msg.data.push_back( K_vector_(i) );
         }
         pub_kgain_.publish(kgain_msg);
 
         // Publish data sensors 4 debug
-        std_msgs::Float32 vel_msg, r_msg, posx_msg, posy_msg, dt_msg;
+        std_msgs::Float64 vel_msg, r_msg, posx_msg, posy_msg, dt_msg;
         vel_msg.data = u_;
         r_msg.data = r_;
         posx_msg.data = pos_x_;
@@ -491,13 +493,17 @@ void KalmanFilter::publishLaser(){
   laser_msg.intensities.resize(N_);
   for(unsigned int i = 0; i < N_; ++i){
      laser_msg.ranges[i] = 1/state_(i);
-     if (state_(i)==0){
-       laser_msg.ranges[i] = 10;
-     }
      if (state_(i)<0){
-       laser_msg.ranges[i] = 10;
+       laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
-     laser_msg.intensities[i] = 47.0;
+     // Void bad reading areas in the front
+     if (i>=N_/2-10 && i < N_/2+10){
+       laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
+     }
+     // Void bad reading areas in the back
+     else if (i<5 && i >= N_-5){
+       laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
+     }
    }
   pub_laser_.publish(laser_msg);
 }

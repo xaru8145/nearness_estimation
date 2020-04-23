@@ -6,7 +6,9 @@
 #include <iostream>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Float64.h>
 #include <std_msgs/Time.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
@@ -88,6 +90,7 @@ class KalmanFilter{
         bool flag_oflow_;
         bool flag_radar_;
         bool flag_vel_;
+        bool flag_odom_;
 
         VectorXd state0_;
         VectorXd state_pred_;
