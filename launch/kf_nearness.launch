@@ -12,7 +12,7 @@
       <param name="pyr_window_size" value="50"/>
       <param name="pixel_scale" value="215"/>
       <param name="alpha" value="0.7"/>
-      <!-- Blur size must be an int odd number -->
+      <!-- Blur size must be an int  -->
       <param name="if_blur" value="true"/>
       <param name="blur_size" value="5"/>
   </node>
