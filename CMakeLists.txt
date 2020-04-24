@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  #CppLowess REQUIRED
 )
 
 find_package(Eigen3 REQUIRED)
@@ -94,6 +95,7 @@ include_directories(
  include
   ${EIGEN3_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
+#  ${CppLowess_INCLUDE_DIRS}
 )
 
 # Define class (it is a library not an executable)
@@ -144,6 +146,7 @@ target_link_libraries(kf_nearness_node kf_nearness ${catkin_LIBRARIES} ${EIGEN3_
 #   FILES_MATCHING PATTERN "*.h"
 #   PATTERN ".svn" EXCLUDE
 # )
+
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES

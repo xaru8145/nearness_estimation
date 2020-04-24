@@ -1,4 +1,5 @@
 #include <nearness_estimation/kalman_filter.h>
+#include <CppLowess/Lowess.h>
 
 KalmanFilter::KalmanFilter(const ros::NodeHandle &node_handle,
                            const ros::NodeHandle &private_node_handle)
@@ -21,7 +22,7 @@ void KalmanFilter::init() {
     sub_radar_vel_ = nh_.subscribe("/mmWaveDataHdl/velocity", 1, &KalmanFilter::radarvelCb, this);
     sub_radar_scan_ = nh_.subscribe("/radar_scan", 1, &KalmanFilter::radarscanCb, this);
     sub_imu_ = nh_.subscribe("/imu/data_added_cov", 1, &KalmanFilter::imuCb, this);
-    sub_tang_flow_ = nh_.subscribe("/optic_flow_node/tang_optic_flow", 1, &KalmanFilter::oflowCb, this);
+    sub_tang_flow_ = nh_.subscribe("/optic_flow_node/tang_optic_flow/filtered", 1, &KalmanFilter::oflowCb, this);
     sub_odom_ = nh_.subscribe("/odometry/filtered", 1, &KalmanFilter::odomCb, this);
     //Define lidar sub
 
@@ -49,7 +50,7 @@ void KalmanFilter::init() {
     nh_.param("/pointcloud_to_laserscan/angle_max", a_max, 0.78);
     nh_.param("/pointcloud_to_laserscan/angle_min", a_min, -0.78);
     nh_.param("/pointcloud_to_laserscan/angle_increment", da, 0.03);
-    Nrad_ = 40; //for comfort before finishing the code(a_max - a_min)/da;
+    Nrad_ = (a_max - a_min)/da;
     Ndy_ = (N_+Nrad_)/2;
 
     // Process noise covariance
@@ -243,6 +244,8 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
         update();
 
         ros::Time time5 = ros::Time::now();
+
+        filterData();
 
         publishLaser();
 
@@ -476,6 +479,28 @@ void KalmanFilter::update()
     state_(N_/2) = 0;
 }
 
+
+void KalmanFilter::filterData()
+{
+  // Apply LOESS filter
+  // https://github.com/hroest/CppLowess
+  CppLowess::TemplatedLowess<std::vector<double>, double> dlowess;
+  vector<double> v_xval;
+  vector<double> v_yval;
+   for (size_t i = 0; i < Nrad_; i++)
+   {
+     v_xval.push_back(gamma_vector_(i + (N_-Nrad_)/2));
+     v_yval.push_back(state_(i + (N_-Nrad_)/2));
+   }
+
+  vector<double> filtered_y(Nrad_), tmp1(Nrad_), tmp2(Nrad_);
+  dlowess.lowess(v_xval, v_yval, 0.5, 0, 0.0, filtered_y, tmp1, tmp2); //f,nsteps,delta
+  for (size_t i = 0; i < Nrad_; i++){
+    state_(i + (N_-Nrad_)/2) = filtered_y[i];
+  }
+}
+
+
 void KalmanFilter::publishLaser(){
   // Publish estimated nearness into laser scan
   ros::Time scan_time = ros::Time::now();
@@ -501,7 +526,7 @@ void KalmanFilter::publishLaser(){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
      // Void bad reading areas in the back
-     else if (i<5 && i >= N_-5){
+     else if (i<10 && i >= N_-10){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
    }

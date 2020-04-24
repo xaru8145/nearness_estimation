@@ -38,6 +38,7 @@ class KalmanFilter{
         void removeOutliers();
         void kalmanGain();
         void update();
+        void filterData();
         void publishLaser();
 
     private:
@@ -115,6 +116,54 @@ class KalmanFilter{
         MatrixXd H_;
         MatrixXd K_;
         MatrixXd KH_;
+
+};
+
+class TestContainer
+{
+
+  std::vector<double> data_;
+/// Some other stuff may go here
+
+public:
+
+  typedef std::vector<double>::iterator iterator;
+
+  TestContainer() {}
+  explicit TestContainer(int n)
+  {
+    data_.resize(n);
+  }
+
+  inline size_t size() const
+  {
+    return data_.size();
+  }
+
+  inline double& operator[](size_t n)
+  {
+    return data_[n];
+  }
+
+  const inline double& operator[](size_t n) const
+  {
+    return data_[n];
+  }
+
+  inline void push_back(double x)
+  {
+    return data_.push_back(x);
+  }
+
+  inline std::vector<double>::iterator begin()
+  {
+    return data_.begin();
+  }
+
+  inline std::vector<double>::iterator end()
+  {
+    return data_.end();
+  }
 
 };
 
