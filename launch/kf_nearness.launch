@@ -26,6 +26,8 @@
       <param name="covariance_optic_flow" value="5"/>
       <param name="covariance_radar" value="0.001"/>
       <param name="threshold" value="0.3"/>
+      <param name="minimum_velocity" value="0.4"/>
+      <param name="lowess_smoothness" value="0.2"/>
   </node>
 
 

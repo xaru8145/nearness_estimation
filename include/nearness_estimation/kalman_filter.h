@@ -53,17 +53,6 @@ class KalmanFilter{
         ros::Subscriber sub_odom_;
 
         ros::Publisher pub_mu_;
-        ros::Publisher pub_oflow_;
-        ros::Publisher pub_oflow2mu_;
-        ros::Publisher pub_doflow_;
-        ros::Publisher pub_a_;
-        ros::Publisher pub_kgain_;
-        ros::Publisher pub_radscan_;
-        ros::Publisher pub_vel_;
-        ros::Publisher pub_r_;
-        ros::Publisher pub_posx_;
-        ros::Publisher pub_posy_;
-        ros::Publisher pub_dt_;
         ros::Publisher pub_laser_;
         ros::Time last_timestamp_;
 
@@ -86,6 +75,8 @@ class KalmanFilter{
         double r_rad_;
         double dt_;
         double thresh_;
+        double min_vel_;
+        double f_smooth_;
         bool init_;
         bool flag_imu_;
         bool flag_oflow_;
@@ -103,7 +94,6 @@ class KalmanFilter{
         VectorXd y_;
         VectorXd oflow_;
         VectorXd last_oflow_;
-        VectorXd K_vector_;
         VectorXf gamma_vector_;
         MatrixXd Q_;
         MatrixXd R_oflow_;
@@ -119,11 +109,12 @@ class KalmanFilter{
 
 };
 
+
+// Class for Lowess filter
 class TestContainer
 {
 
   std::vector<double> data_;
-/// Some other stuff may go here
 
 public:
 
