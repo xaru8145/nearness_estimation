@@ -33,13 +33,13 @@ void KalmanFilter::init() {
     pub_laser_ = nh_.advertise<sensor_msgs::LaserScan>("laserscan", 10);
 
     // Import parameters
-    nh_.param("/kf_nearness_node/num_ring_points", N_,160);
     nh_.param("/kf_nearness_node/covariance_process", q_, 100.0);
     nh_.param("/kf_nearness_node/covariance_optic_flow", r_oflow_, 5.0);
     nh_.param("/kf_nearness_node/covariance_radar", r_rad_, 0.001);
     nh_.param("/kf_nearness_node/threshold", thresh_, 0.3);
     nh_.param("/kf_nearness_node/lowess_smoothness", f_smooth_, 0.2);
     nh_.param("/kf_nearness_node/minimum_velocity", min_vel_, 0.4);
+    nh_.param("/optic_flow_node/num_ring_points", N_,160);
     nh_.param("/pointcloud_to_laserscan/angle_max", a_max, 0.78);
     nh_.param("/pointcloud_to_laserscan/angle_min", a_min, -0.78);
     nh_.param("/pointcloud_to_laserscan/angle_increment", da, 0.03);

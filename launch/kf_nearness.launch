@@ -21,7 +21,6 @@
   <include file="$(find pointcloud_to_laserscan)/launch/pcl2laserscan.launch" />
 
   <node name="kf_nearness_node" pkg="nearness_estimation" type="kf_nearness_node" output="screen" >
-      <param name="num_ring_points" value="160"/>
       <param name="covariance_process" value="100"/>
       <param name="covariance_optic_flow" value="5"/>
       <param name="covariance_radar" value="0.001"/>

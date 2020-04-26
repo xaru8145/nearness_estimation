@@ -1,0 +1,43 @@
+<!--
+  Filters for the data from the radar
+ -->
+<launch>
+
+   <arg name="radar_pcl" default="mmWaveDataHdl/RScan" doc="[mmWaveDataHdl/RScan, mmWaveDataHdl/RScanInliers]"/>
+
+   <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen"/>
+
+   <node pkg="nodelet" type="nodelet" name="r_filt" args="load pcl/PassThrough pcl_manager" output="screen">
+      <remap from="~input" to="$(arg radar_pcl)"/>
+      <remap from="~output" to="r_filt_out"/>
+      <rosparam>
+         filter_field_name: range
+         filter_limit_min: 0.5
+         filter_limit_max: 15
+         filter_limit_negative: False
+      </rosparam>
+   </node>
+
+   <node pkg="nodelet" type="nodelet" name="z_filt" args="load pcl/PassThrough pcl_manager" output="screen">
+      <remap from="~input" to="r_filt_out"/>
+      <remap from="~output" to="rz_filt_out"/>
+      <rosparam>
+         filter_field_name: z
+         filter_limit_min: -0.5
+         filter_limit_max: 2.5
+         filter_limit_negative: False
+      </rosparam>
+   </node>
+
+   <node pkg="nodelet" type="nodelet" name="i_filt" args="load pcl/PassThrough pcl_manager" output="screen">
+      <remap from="~input" to="rz_filt_out"/>
+      <remap from="~output" to="rzi_filt_out"/>
+      <rosparam>
+         filter_field_name: intensity
+         filter_limit_min: 5
+         filter_limit_max: 100
+         filter_limit_negative: False
+      </rosparam>
+   </node>
+
+</launch>
