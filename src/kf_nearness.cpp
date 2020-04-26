@@ -28,6 +28,8 @@ void KalmanFilter::init() {
 
     // Set up publishers
     pub_mu_ = nh_.advertise<std_msgs::Float64MultiArray>("nearness", 10);
+    pub_mu_unfilt_ = nh_.advertise<std_msgs::Float64MultiArray>("nearness/unfiltered", 10);
+    pub_mu_norad_ = nh_.advertise<std_msgs::Float64MultiArray>("nearness/no_radar", 10);
     pub_laser_ = nh_.advertise<sensor_msgs::LaserScan>("laserscan", 10);
 
     // Import parameters
@@ -47,11 +49,16 @@ void KalmanFilter::init() {
     // Process noise covariance
     Q_.setIdentity(N_,N_);
     Q_ = Q_*q_;
-    // Higher covariance @ front of the vehicle
-    for (int i = N_/2-10; i < N_/2+10; i++){
-      Q_(i,i) = Q_(i,i)*1000; // Test x5 and x10 of that
+    // Higher covariance @ front and back of the vehicle
+    for (int i = 0; i < 20; i++){
+      Q_(i+N_/2-10,i+N_/2-10) = Q_(i+N_/2-10,i+N_/2-10)*1000; // front
+      if (i<10){
+        Q_(i,i) = Q_(i,i)*1000; // back
+      }
+      else{
+        Q_(N_+9-i,N_+9-i) = Q_(N_+9-i,N_+9-i)*1000; // back
+      }
     }
-
     // Measurement noise covariance
     R_oflow_.setIdentity(N_,N_);
     R_oflow_ = R_oflow_*r_oflow_;
@@ -71,6 +78,8 @@ void KalmanFilter::init() {
     state_.resize(N_);
     state_pred_.resize(N_);
     state_future_.resize(N_);
+    state_nofilt_.resize(N_);
+    state_norad_.resize(N_);
     f_.resize(N_);
     y_.resize(N_+Nrad_);
     P_update_.resize(N_,N_);
@@ -113,6 +122,11 @@ void KalmanFilter::odomCb(const nav_msgs::OdometryConstPtr &odom_msg){
   flag_odom_ = true;
   pos_x_ = odom_msg->pose.pose.position.x;
   pos_y_ = odom_msg->pose.pose.position.y;
+  // Convert Quaternion to RPY
+  double roll, pitch;
+  tf::Quaternion tf_quat;
+  tf::quaternionMsgToTF(odom_msg->pose.pose.orientation, tf_quat);
+  tf::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw_);
 
 }
 
@@ -136,17 +150,20 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
   else {
     if (flag_radar_ && flag_oflow_ && flag_imu_ && flag_vel_ && flag_odom_){
     // Run filter when robot is moving and all measureents are received
-        VectorXd y_oflow(N_);
-        VectorXd oflow2mu(N_);
-        for(int i = 0; i <N_; i++){
+      if (k_==1){
+        ROS_INFO("All measurements received. Initializing Kalman Filter");
+      }
+      VectorXd y_oflow(N_);
+      VectorXd oflow2mu(N_);
+      for(int i = 0; i <N_; i++){
+          oflow2mu(i) = (oflow_(i)+r_)/(u_*sin(gamma_vector_(i))-v_*cos(gamma_vector_(i)));
+          if (oflow2mu(i)<0 || i==N_/2 || i==N_/2+1 || i==N_/2+2){
+            // Force measured oflow has positive nearness associated
+            // Around 180deg, meas are not very reliable.
+            oflow_(i) = -r_;
             oflow2mu(i) = (oflow_(i)+r_)/(u_*sin(gamma_vector_(i))-v_*cos(gamma_vector_(i)));
-            if (oflow2mu(i)<0 || i==N_/2 || i==N_/2+1 || i==N_/2+2){
-              // Force measured oflow has positive nearness associated
-              // Around 180deg, meas are not very reliable.
-              oflow_(i) = -r_;
-              oflow2mu(i) = (oflow_(i)+r_)/(u_*sin(gamma_vector_(i))-v_*cos(gamma_vector_(i)));
-            }
-            y_oflow(i) = oflow_(i) + r_;
+          }
+          y_oflow(i) = oflow_(i) + r_;
         }
 
         y_.setZero();
@@ -197,24 +214,35 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
 
         update();
 
+        state_nofilt_ = state_;
+
         filterData();
 
         publishLaser();
 
+        // State without radar
+        state_norad_ = oflow2mu;
+        state_norad_(0) = 0;
+        state_norad_(N_/2) = 0;
+
+        // Published filtered estimated nearness
+        std_msgs::Float64MultiArray mu_msg, mu_nofilt_msg, mu_norad_msg;
+        for(int i = 0; i <N_; i++){
+            mu_msg.data.push_back( state_(i) );
+            mu_nofilt_msg.data.push_back( state_nofilt_(i) );
+            mu_norad_msg.data.push_back( state_norad_(i) );
+        }
+        pub_mu_.publish(mu_msg);
+        pub_mu_unfilt_.publish(mu_nofilt_msg);
+        pub_mu_norad_.publish(mu_norad_msg);
+
+        k_ = k_+1;
         // Reset flags
         flag_radar_ = false;
         flag_oflow_ = false;
         flag_imu_ = false;
         flag_vel_ = false;
         flag_odom_ = false;
-
-        // Published filtered estimated nearness
-        std_msgs::Float64MultiArray mu_msg;
-        for(int i = 0; i <N_; i++){
-            mu_msg.data.push_back( state_(i) );
-        }
-        pub_mu_.publish(mu_msg);
-        k_ = k_+1;
     }
   }
 
@@ -264,7 +292,7 @@ void KalmanFilter::removeOutliers(){
       dx = 1/last_state_(i)*cos(gamma_vector_(i)) + odom_x;
       dy = 1/last_state_(i)*sin(gamma_vector_(i)) + odom_y;
       gamma_approx = atan2f(dy,dx);
-      gamma_approx = (gamma_approx > 0 ? gamma_approx : (2*M_PI + gamma_approx)) ; // map atan to 0-2pi
+      gamma_approx = (gamma_approx > 0 ? gamma_approx : (2*M_PI + gamma_approx)) + yaw_; // map atan to 0-2pi
       diff = abs(gamma_vector_.array() - gamma_approx);
       // Search for min diff
       index(i) = 0;
@@ -423,11 +451,12 @@ void KalmanFilter::publishLaser(){
   laser_msg.ranges.resize(N_);
   laser_msg.intensities.resize(N_);
   for(unsigned int i = 0; i < N_; ++i){
-     laser_msg.ranges[i] = 1/state_(i);
-     if (state_(i)<0){
+     laser_msg.ranges[i] = 1/state_(i); //state_norad_(i)
+     if (state_(i)<0){ // if (state_norad_(i)<0){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
      // Void bad reading areas in the front
+     /*/
      if (i>=N_/2-10 && i < N_/2+10){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
@@ -435,6 +464,7 @@ void KalmanFilter::publishLaser(){
      else if (i<10 && i >= N_-10){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
+     /*/
    }
   pub_laser_.publish(laser_msg);
 }

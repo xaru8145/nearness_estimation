@@ -53,6 +53,9 @@ class KalmanFilter{
         ros::Subscriber sub_odom_;
 
         ros::Publisher pub_mu_;
+        ros::Publisher pub_mu_unfilt_;
+        ros::Publisher pub_mu_norad_;
+
         ros::Publisher pub_laser_;
         ros::Time last_timestamp_;
 
@@ -73,6 +76,7 @@ class KalmanFilter{
         double q_;
         double r_oflow_;
         double r_rad_;
+        double yaw_;
         double dt_;
         double thresh_;
         double min_vel_;
@@ -84,17 +88,19 @@ class KalmanFilter{
         bool flag_vel_;
         bool flag_odom_;
 
+        VectorXd state_;
         VectorXd state0_;
         VectorXd state_pred_;
         VectorXd state_future_;
         VectorXd last_state_;
-        VectorXd f_;
-        VectorXd state_;
+        VectorXd state_nofilt_;
+        VectorXd state_norad_;
         VectorXd y_rad_;
         VectorXd y_;
         VectorXd oflow_;
         VectorXd last_oflow_;
         VectorXf gamma_vector_;
+        VectorXd f_;
         MatrixXd Q_;
         MatrixXd R_oflow_;
         MatrixXd R_rad_;
