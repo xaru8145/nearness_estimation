@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(nearness_estimation)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  #CppLowess REQUIRED
 )
 
 find_package(Eigen3 REQUIRED)
@@ -94,16 +95,22 @@ include_directories(
  include
   ${EIGEN3_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
+#  ${CppLowess_INCLUDE_DIRS}
 )
 
 # Define class (it is a library not an executable)
 add_library(simple_nearness src/simple_nearness.cpp)
-# add_dependencies(simple_nearness  ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(simple_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
 
 # Define executable that calls the class
 add_executable(simple_nearness_node src/simple_nearness_node.cpp)
 target_link_libraries(simple_nearness_node simple_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+
+add_library(kf_nearness src/kf_nearness.cpp)
+target_link_libraries(kf_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+add_executable(kf_nearness_node src/kf_nearness_node.cpp)
+target_link_libraries(kf_nearness_node kf_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
+
 
 #############
 ## Install ##
@@ -139,6 +146,7 @@ target_link_libraries(simple_nearness_node simple_nearness ${catkin_LIBRARIES} $
 #   FILES_MATCHING PATTERN "*.h"
 #   PATTERN ".svn" EXCLUDE
 # )
+
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES

@@ -1,0 +1,14 @@
+# Resolution in meters for the map when starting with an empty map
+resolution: 0.20
+# Static global frame in which the map will be published
+frame_id: map
+# The robot's base frame in which ground plane detection is performed (if enabled)
+base_frame_id: camera_odom_frame
+# Probabilities for hits and misses in the sensor model when dynamically building a map
+sensor_model/hit: 0.80
+sensor_model/miss: 0.45
+# Minimum and maximum probability for clamping when dynamically building a map
+sensor_model/min: 0.12
+sensor_model/max: 0.97
+# Distance threshold for points (in z direction) to be segmented to the ground plane
+ground_filter/distance: 0.05

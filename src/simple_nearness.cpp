@@ -77,19 +77,30 @@ void NearnessEstimation::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflo
   pub_mu_.publish(mu_msg);
 
   if(publish_laser_){
+        ros::Time scan_time = ros::Time::now();
+
         sensor_msgs::LaserScan laser_msg;
-        laser_msg.header.stamp = imu_time_;//scan_time;
+        laser_msg.header.stamp = scan_time;//ros::Time::now();//imu_time_;//scan_time;
         laser_msg.header.frame_id = "oflow_laser_frame";
         laser_msg.angle_min = -M_PI;
         laser_msg.angle_max = M_PI;
         laser_msg.angle_increment = 2*M_PI / num_ring_points_;
-        laser_msg.time_increment = (1 / 25) / (num_ring_points_);
+        laser_msg.time_increment =  0.04 / num_ring_points_;
         laser_msg.range_min = 0.2;
         laser_msg.range_max = 10.0;
         laser_msg.ranges.resize(num_ring_points_);
         laser_msg.intensities.resize(num_ring_points_);
         for(unsigned int i = 0; i < num_ring_points_; ++i){
            laser_msg.ranges[i] = 1/mu_vector_(i);
+           if (i==0 || i==num_ring_points_/2-1){
+             laser_msg.ranges[i] = 10;
+           }
+           if (mu_vector_(i)==0){
+             laser_msg.ranges[i] = 10;
+           }
+           if (mu_vector_(i)<0){
+             laser_msg.ranges[i] = 10;
+           }
            laser_msg.intensities[i] = 47.0;
          }
         pub_laser_.publish(laser_msg);
