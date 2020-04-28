@@ -1,5 +1,6 @@
 <launch>
   <arg name="rviz" default="true"/>
+  <param name="/use_sim_time" value="true"/>
 
   <!-- Run optic flow -->
   <node name="optic_flow_node" pkg="optic_flow_node" type="wide_field_optic_flow_node" output="screen" >
@@ -38,8 +39,9 @@
   <node pkg="tf2_ros" type="static_transform_publisher" name="tf_imu" args="0.0 0.0 0.0 0.0 0.0 0 1.0 base_link imu_link" />
   <node pkg="tf2_ros" type="static_transform_publisher" name="tf_radar" args="0.27 0.0 0.0 0.0 0.0 0 1.0 base_link base_radar_link" />
   <node pkg="tf2_ros" type="static_transform_publisher" name="tf_laser" args="0.1 0.0 0.0 0.0 0.0 1.0 0.0 base_link laser" />
-  <!-- Set up laserscan frame to output scans clockwise -->
-  <node pkg="tf2_ros" type="static_transform_publisher" name="tf_oflow_laser" args="0.1 0.0 0.0 1 0 0 0 base_link oflow_laser_frame" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="tf_oflow" args="-0.17 0.0 0.0 0 0 0 1 base_radar_link oflow_frame" />
+  <!-- Need to rotate oflow frame to display estimated depth in laser msg -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="tf_oflow_laser" args="0.0 0.0 0.0 1 0 0 0 oflow_frame oflow_laser_frame" />
   <node pkg="tf2_ros" type="static_transform_publisher" name="tf_map" args="0.0 0.0 0.0 0.0 0.0 0 1.0 map odom" />
 
   <!-- Rviz -->

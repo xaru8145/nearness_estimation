@@ -3,7 +3,7 @@ resolution: 0.20
 # Static global frame in which the map will be published
 frame_id: map
 # The robot's base frame in which ground plane detection is performed (if enabled)
-base_frame_id: camera_odom_frame
+#base_frame_id: camera_odom_frame
 # Probabilities for hits and misses in the sensor model when dynamically building a map
 sensor_model/hit: 0.80
 sensor_model/miss: 0.45

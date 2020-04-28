@@ -1,0 +1,12 @@
+<launch>
+
+  <!-- Launch USB cam -->
+  <include file="$(find usb_cam)/launch/usb_cam-test.launch" />
+  <!-- Launch Radar -->
+  <include file="$(find goggles)/launch/goggles.launch" />
+  <!-- Launch IMU filter -->
+  <include file="$(find imu_filter_madgwick)/launch/imu.launch" />
+  <!-- Launch Lidar-->
+  <include file="$(find rplidar_ros)/launch/rplidar_s1.launch" />
+
+</launch>

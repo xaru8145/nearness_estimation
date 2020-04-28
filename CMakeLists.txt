@@ -12,7 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
-  #CppLowess REQUIRED
+  tf2
+  tf2_ros
 )
 
 find_package(Eigen3 REQUIRED)
@@ -111,6 +112,8 @@ target_link_libraries(kf_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
 add_executable(kf_nearness_node src/kf_nearness_node.cpp)
 target_link_libraries(kf_nearness_node kf_nearness ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
 
+add_executable(transform_radar_frame src/transform_radar_frame.cpp)
+target_link_libraries(transform_radar_frame ${catkin_LIBRARIES})
 
 #############
 ## Install ##
