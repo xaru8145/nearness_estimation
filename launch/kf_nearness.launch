@@ -1,18 +1,20 @@
 <launch>
   <arg name="rviz" default="true"/>
+  <!-- Set imu50Hz to true for rosbag files recorded before 05/06/20 -->
+  <arg name="imu50Hz" default="false" doc="whether to downsample IMU to 50Hz"/>
   <param name="/use_sim_time" value="true"/>
 
   <!-- Run optic flow -->
   <node name="optic_flow_node" pkg="optic_flow_node" type="wide_field_optic_flow_node" output="screen" >
       <param name="image_center_x" value="320"/>
       <param name="image_center_y" value="240"/>
-      <param name="inner_ring_radius" value="235"/>
+      <param name="inner_ring_radius" value="240"/>
       <param name="ring_dr" value="10"/>
       <param name="num_ring_points" value="160"/>
       <param name="num_rings" value="5"/>
-      <param name="pyr_window_size" value="50"/>
+      <param name="pyr_window_size" value="30"/>
       <param name="pixel_scale" value="215"/>
-      <param name="alpha" value="0.7"/>
+      <param name="alpha" value="0.3"/>
       <!-- Blur size must be an int  -->
       <param name="if_blur" value="true"/>
       <param name="blur_size" value="5"/>
@@ -33,6 +35,8 @@
 
   <!-- Convert estimated laser nearness to PCL and run octomap server-->
   <include file="$(find pointcloud_to_laserscan)/launch/laserscan2pcl.launch" />
+
+  <node if="$(arg imu50Hz)" pkg="imu_filter_madgwick" type="imu_low_freq" name="imu_low_freq" output="screen"/>
 
   <!-- Odometry and transforms-->
   <include file="$(find robot_localization)/launch/jackal_localization.launch" />

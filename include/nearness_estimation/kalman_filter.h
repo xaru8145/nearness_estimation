@@ -55,6 +55,12 @@ class KalmanFilter{
         ros::Publisher pub_mu_;
         ros::Publisher pub_mu_unfilt_;
         ros::Publisher pub_mu_norad_;
+        ros::Publisher pub_oflow_;
+        ros::Publisher pub_u_;
+        ros::Publisher pub_r_;
+        ros::Publisher pub_odom_;
+        ros::Publisher pub_rad_;
+        ros::Publisher pub_mu_pred_;
 
         ros::Publisher pub_laser_;
         ros::Time last_timestamp_;
@@ -73,6 +79,7 @@ class KalmanFilter{
         float pos_y_;
         float last_pos_x_;
         float last_pos_y_;
+        float last_yaw_;
         double q_;
         double r_oflow_;
         double r_rad_;
@@ -113,6 +120,7 @@ class KalmanFilter{
         MatrixXd K_;
         MatrixXd KH_;
 
+        nav_msgs::Odometry odometry_;
 };
 
 
