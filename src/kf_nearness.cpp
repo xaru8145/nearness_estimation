@@ -227,7 +227,7 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
 
         publishLaser();
 
-        // State without radar
+        // State without radar (to analyze results)
         state_norad_ = oflow2mu;
         state_norad_(0) = 0;
         state_norad_(N_/2) = 0;
@@ -257,6 +257,7 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
         pub_r_.publish(r_msg);
 
         k_ = k_+1;
+
         // Reset flags
         flag_radar_ = false;
         flag_oflow_ = false;
@@ -477,23 +478,13 @@ void KalmanFilter::publishLaser(){
       if (state_(i)<0){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
-     // Void bad reading areas in the front
+     // Only publish estimates in the front of the vehicle (where the radar improves the results)
      if (i<(N_-Nrad_)/2){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
-     // Void bad reading areas in the back
      else if (i>=(N_-Nrad_)/2+Nrad_){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
-     /*/
-     if (i>=N_/2-10 && i < N_/2+10){
-       laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
-     }
-     // Void bad reading areas in the back
-     else if (i<10 && i >= N_-10){
-       laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
-     }
-     /*/
    }
   pub_laser_.publish(laser_msg);
 }

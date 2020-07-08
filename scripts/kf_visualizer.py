@@ -35,7 +35,7 @@ maxAng = 2*pi
 rospy.init_node( 'scan_plot' , anonymous = True )
 
 # rospy.Subscriber( "wfi/horiz/image_scan" , Float32MultiArray , image_scan_cb )
-rospy.Subscriber( "/kalman_filter_node/nearness/no_radar", Float64MultiArray , nearness_cb )
+rospy.Subscriber( "/kalman_filter_node/nearness", Float64MultiArray , nearness_cb )
 
 try:
     while ( not rospy.is_shutdown() ):
