@@ -21,7 +21,7 @@ void KalmanFilter::init() {
     // Set up subscribers and callbacks
     sub_radar_vel_ = nh_.subscribe("/mmWaveDataHdl/velocity", 1, &KalmanFilter::radarvelCb, this);
     sub_radar_scan_ = nh_.subscribe("/radar_scan", 1, &KalmanFilter::radarscanCb, this);
-    sub_imu_ = nh_.subscribe("/imu/data_added_cov", 1, &KalmanFilter::imuCb, this);
+    sub_imu_ = nh_.subscribe("/imu/data_low_freq", 1, &KalmanFilter::imuCb, this);
     sub_tang_flow_ = nh_.subscribe("/optic_flow_node/tang_optic_flow/filtered", 1, &KalmanFilter::oflowCb, this);
     sub_odom_ = nh_.subscribe("/odometry/filtered", 1, &KalmanFilter::odomCb, this);
     //Define lidar sub
@@ -30,7 +30,13 @@ void KalmanFilter::init() {
     pub_mu_ = nh_.advertise<std_msgs::Float64MultiArray>("nearness", 10);
     pub_mu_unfilt_ = nh_.advertise<std_msgs::Float64MultiArray>("nearness/unfiltered", 10);
     pub_mu_norad_ = nh_.advertise<std_msgs::Float64MultiArray>("nearness/no_radar", 10);
+    pub_mu_pred_ = nh_.advertise<std_msgs::Float64MultiArray>("nearness/prediction", 10);
+    pub_oflow_ = nh_.advertise<std_msgs::Float64MultiArray>("optic_flow", 10);
+    pub_u_ = nh_.advertise<std_msgs::Float64>("u", 10);
+    pub_r_ = nh_.advertise<std_msgs::Float64>("r", 10);
     pub_laser_ = nh_.advertise<sensor_msgs::LaserScan>("laserscan", 10);
+    pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odometry", 10);
+    pub_rad_ = nh_.advertise<sensor_msgs::LaserScan>("radar", 10);
 
     // Import parameters
     nh_.param("/kf_nearness_node/covariance_process", q_, 100.0);
@@ -120,6 +126,7 @@ void KalmanFilter::oflowCb(const std_msgs::Float32MultiArrayConstPtr &oflow_msg)
 void KalmanFilter::odomCb(const nav_msgs::OdometryConstPtr &odom_msg){
 
   flag_odom_ = true;
+  odometry_ = *odom_msg;
   pos_x_ = odom_msg->pose.pose.position.x;
   pos_y_ = odom_msg->pose.pose.position.y;
   // Convert Quaternion to RPY
@@ -188,10 +195,10 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
           if (isnan(a(i)) || isinf(a(i))){
             a(i) = 0;
           }
-          else if (a(i)>50){
+          if (a(i)>50){
             a(i) = 50;
           }
-          else if (a(i)<-50){
+          if (a(i)<-50){
             a(i) = -50;
           }
           f_(i) = 1 + a(i)*dt_ + a(i)*a(i)*dt_*dt_/2 + a(i)*a(i)*a(i)*dt_*dt_*dt_/6;
@@ -220,23 +227,37 @@ void KalmanFilter::radarscanCb(const sensor_msgs::LaserScanConstPtr &radar_scan_
 
         publishLaser();
 
-        // State without radar
+        // State without radar (to analyze results)
         state_norad_ = oflow2mu;
         state_norad_(0) = 0;
         state_norad_(N_/2) = 0;
 
         // Published filtered estimated nearness
-        std_msgs::Float64MultiArray mu_msg, mu_nofilt_msg, mu_norad_msg;
+        std_msgs::Float64MultiArray mu_msg, mu_nofilt_msg, mu_norad_msg, mu_pred_msg, oflow_msg;
         for(int i = 0; i <N_; i++){
             mu_msg.data.push_back( state_(i) );
             mu_nofilt_msg.data.push_back( state_nofilt_(i) );
             mu_norad_msg.data.push_back( state_norad_(i) );
+            mu_pred_msg.data.push_back( state_pred_(i) );
+            oflow_msg.data.push_back( oflow_(i) );
         }
         pub_mu_.publish(mu_msg);
         pub_mu_unfilt_.publish(mu_nofilt_msg);
         pub_mu_norad_.publish(mu_norad_msg);
+        pub_mu_pred_.publish(mu_pred_msg);
+        pub_oflow_.publish(oflow_msg);
+
+        pub_odom_.publish(odometry_);
+        pub_rad_.publish(*radar_scan_msg);
+
+        std_msgs::Float64 u_msg, r_msg;
+        u_msg.data = u_ ;
+        r_msg.data = r_ ;
+        pub_u_.publish(u_msg);
+        pub_r_.publish(r_msg);
 
         k_ = k_+1;
+
         // Reset flags
         flag_radar_ = false;
         flag_oflow_ = false;
@@ -251,6 +272,7 @@ last_oflow_ = oflow_;
 last_state_ = state_;
 last_pos_x_ = pos_x_;
 last_pos_y_ = pos_y_;
+last_yaw_ = yaw_;
 last_r_ = r_;
 last_u_ = u_;
 last_v_ = v_;
@@ -284,6 +306,7 @@ void KalmanFilter::predict(){
 void KalmanFilter::removeOutliers(){
     float odom_x = pos_x_ - last_pos_x_;
     float odom_y = pos_y_ - last_pos_y_;
+    float odom_yaw = yaw_ - last_yaw_;
     float gamma_approx, dx, dy;
     VectorXf diff(N_);
     VectorXi index(N_);
@@ -292,7 +315,7 @@ void KalmanFilter::removeOutliers(){
       dx = 1/last_state_(i)*cos(gamma_vector_(i)) + odom_x;
       dy = 1/last_state_(i)*sin(gamma_vector_(i)) + odom_y;
       gamma_approx = atan2f(dy,dx);
-      gamma_approx = (gamma_approx > 0 ? gamma_approx : (2*M_PI + gamma_approx)) + yaw_; // map atan to 0-2pi
+      gamma_approx = (gamma_approx > 0 ? gamma_approx : (2*M_PI + gamma_approx)) + odom_yaw; // map atan to 0-2pi
       diff = abs(gamma_vector_.array() - gamma_approx);
       // Search for min diff
       index(i) = 0;
@@ -451,20 +474,17 @@ void KalmanFilter::publishLaser(){
   laser_msg.ranges.resize(N_);
   laser_msg.intensities.resize(N_);
   for(unsigned int i = 0; i < N_; ++i){
-     laser_msg.ranges[i] = 1/state_(i); //state_norad_(i)
-     if (state_(i)<0){ // if (state_norad_(i)<0){
+     laser_msg.ranges[i] = 1/state_(i);
+      if (state_(i)<0){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
-     // Void bad reading areas in the front
-     /*/
-     if (i>=N_/2-10 && i < N_/2+10){
+     // Only publish estimates in the front of the vehicle (where the radar improves the results)
+     if (i<(N_-Nrad_)/2){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
-     // Void bad reading areas in the back
-     else if (i<10 && i >= N_-10){
+     else if (i>=(N_-Nrad_)/2+Nrad_){
        laser_msg.ranges[i] = std::numeric_limits<double>::infinity();
      }
-     /*/
    }
   pub_laser_.publish(laser_msg);
 }
